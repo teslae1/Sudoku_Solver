@@ -45,8 +45,8 @@ namespace Sudoku
         {
             InitializeComponent();
             ResizeForm();
-            DisplayInstructions();
             DisplaySudoku(sudoku);
+            DisplayInstructions();
         }
 
 
@@ -129,10 +129,22 @@ namespace Sudoku
             l.BringToFront();
             return l;
         }
+        void PrintSolvingMessage()
+        {
+            messageTexts[0].Text = "Solving...";
+            messageTexts[1].Text = "";
+            messageTexts[0].Refresh();
+            messageTexts[1].Refresh();
+        }
+        void PrintSolvedMessage()
+        {
+            messageTexts[0].Text = "Solution found!";
+            messageTexts[0].Refresh();
+        }
 
 
         //displaying solving graphically
-        void SolveSudokuLive()
+        void SolveSudokuLive(bool showGraphicsLive)
         {
             //clear the sudoku from player inputs
             for(int i = 0; i < framesDisplayed.Count;i++)
@@ -147,22 +159,23 @@ namespace Sudoku
                     }
                 }
 
-            //print 'while solving' message
-            messageTexts[0].Text = "Solving...";
-            messageTexts[1].Text = "";
-            messageTexts[0].Refresh();
-            messageTexts[1].Refresh();
+            PrintSolvingMessage();
 
-            SolveSudoku(sudoku, true);
+            SolveSudoku(sudoku, showGraphicsLive);
 
-            //print 'solved' message
-            messageTexts[0].Text = "Solution found!";
-            messageTexts[0].Refresh();
+            //show graphics after solved
+            if (!showGraphicsLive)
+                for (int i = 0; i < sudoku.Length; i++)
+                    for (int j = 0; j < sudoku[i].Length; j++)
+                        framesDisplayed[i][j].Text = sudoku[i][j].ToString();
+
+            PrintSolvedMessage();
+
         }
 
 
         //solving logic
-        private void SolveSudoku(int[][] grid, bool showGraphics)
+        private void SolveSudoku(int[][] grid, bool showGraphicsLive)
         {
             //if not solved, keep exploring choices
             if (!CheckIfSolved(grid))
@@ -189,7 +202,7 @@ namespace Sudoku
                 {
                     //make choice 
                     grid[row][col] = i;
-                    if (showGraphics)
+                    if (showGraphicsLive)
                     {
                         framesDisplayed[row][col].Text = i.ToString();
                         framesDisplayed[row][col].Refresh();
@@ -197,7 +210,7 @@ namespace Sudoku
 
                     if (IsValidChoice(row, col, grid))
                     {
-                        SolveSudoku(grid, showGraphics);
+                        SolveSudoku(grid, showGraphicsLive);
                         //stop exploring other branches if solution is found
                         if (CheckIfSolved(grid))
                             break;
@@ -207,7 +220,7 @@ namespace Sudoku
                 if (!CheckIfSolved(grid))
                 {
                         grid[row][col] = 0;
-                    if (showGraphics)
+                    if (showGraphicsLive)
                     {
                         framesDisplayed[row][col].Text = "";
                         framesDisplayed[row][col].Refresh(); 
@@ -331,18 +344,27 @@ namespace Sudoku
         {
             
             var number = (NumberFrame)sender;
-            if(number.AllowPlayerInput)
-            //reset 
-            Selected.DeFocus();
-            Selected = number;
-            //new focus
-            number.Focus();
+            if (number.AllowPlayerInput)
+            {
+                //reset 
+                Selected.DeFocus();
+                Selected = number;
+                //new focus
+                number.Focus();
+            }
         }
         private void User_KeyDown(object sender, KeyEventArgs e)
         {
             //algorithm solve start
             if (e.KeyCode.ToString() == "Space")
-                SolveSudokuLive();
+            {
+                DialogResult choice = MessageBox.Show("Do you want to watch the algorithm solve the sudoku?                   (warning, watching the algorithm slows the process down!)", "With or without graphics", MessageBoxButtons.YesNo);
+                if (choice == DialogResult.Yes)
+                    SolveSudokuLive(true);
+                else
+                    SolveSudokuLive(false);
+                    
+            }
 
             //player guess input
             else if (e.KeyCode.ToString() == "D1"
